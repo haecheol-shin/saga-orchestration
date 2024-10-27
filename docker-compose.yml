@@ -1,0 +1,86 @@
+services:
+  mysql:
+    image: mysql:8.3.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: db_order    # 기본으로 생성할 데이터베이스
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d  # 초기화 스크립트 디렉토리
+
+  order:
+    build:
+      context: ./order
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db_order
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+
+  payment:
+    build:
+      context: ./payment
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db_payment
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+
+  inventory:
+    build:
+      context: ./inventory
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/db_inventory
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    ports:
+      - "9092:9092"
+
+volumes:
+  mysql_data:

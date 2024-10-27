@@ -1,0 +1,24 @@
+# application-docker.yml
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: '*'
+
+    streams:
+      replication-factor: 1
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        use_sql_comments: true
+        dialect: org.hibernate.dialect.MySQLDialect
